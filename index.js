@@ -11,6 +11,11 @@ const { PORT = 8989 } = require('./config.json')
 
 const htmlPath = path.join(__dirname, 'html')
 const badPath = path.join(__dirname, 'bads')
+const tmpPath = path.join(__dirname, 'tmp')
+
+fs.existsSync(badPath) || fs.mkdirSync(badPath)
+fs.existsSync(tmpPath) || fs.mkdirSync(tmpPath)
+
 let Htmls = {}
 let Bads = {}
 
@@ -29,9 +34,9 @@ app.use((_, __, next) => {
 
 const uploadOpts = {
   safeFileNames: true,
-  useTempFiles : true,
+  useTempFiles: true,
   preserveExtension: 4,
-  tempFileDir : path.join(__dirname, 'tmp'),
+  tempFileDir: tmpPath,
 }
 app.use(fileUpload(uploadOpts))
 
