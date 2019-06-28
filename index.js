@@ -51,6 +51,7 @@ app.get('/video/:videoName', (req, res) => {
 
   res.sendFile(path.join(__dirname, 'bads', videoName))
 })
+app.get('/upload.js', (_, res) => res.sendFile(path.join(htmlPath, 'upload.js')))
 app.get('/upload', (_, res) => {
   const html = Mustache.render(Htmls.UPLOAD, {})
   res.send(html)
@@ -58,7 +59,7 @@ app.get('/upload', (_, res) => {
 app.post('/upload', (req, res) => {
   if (req.files && req.files.file && req.files.file.size) {
     const { file } = req.files
-    const filePath = path.join(__dirname, 'test', file.name)
+    const filePath = path.join(__dirname, 'bads', file.name)
 
     file.mv(filePath, error => {
       if (error) {

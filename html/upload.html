@@ -45,10 +45,10 @@
 <body>
   <form action="/upload" method="POST" enctype="multipart/form-data">
     <div class="upload-form__field">
-      <input type="file" name="file" id="file" required>
+      <input type="file" name="file" id="input-file" multiple required>
     </div>
     <div class="upload-form__field">
-      <button type="submit">Upload</button>
+      <button id="btn-submit" type="submit">Upload</button>
     </div>
   </form>
   {{#error}}
@@ -61,6 +61,8 @@
       Upload successfully
     </div>
   {{/ok}}
+  <!-- SCRIPTS -->
+  <script src="upload.js"></script>
 </body>
 
 </html>
