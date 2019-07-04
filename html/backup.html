@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Backup</title>
+  <style>
+    .output {
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
+</head>
+
+<body>
+  <form action="/back-up" method="GET">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password">
+    <button type="submit">Submit</button>
+  </form>
+  {{#output}}
+    <div class="output">
+      <div>{{.}}</div>
+    </div>
+  {{/output}}
+  <script>
+    const output = document.querySelector('.output')
+
+    if (output) {
+      const socket = io()
+      socket.on('file-added', msg => {
+        const line = document.createElement('div');
+        line.innerText = msg;
+
+        output.appendChild(line);
+      })
+
+      socket.on('done', _ => {
+        window.location.reload(true)
+      })
+    }
+  </script>
+</body>
+
+</html>
