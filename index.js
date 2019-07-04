@@ -104,7 +104,7 @@ app.get('/back-up/:password?', async (req, res) => {
               fs.unlinkSync(backupPath)
             }
 
-            return res.status(404).send(err)
+            socket.emit('fail', err.message)
           }
 
           socket.emit('done')

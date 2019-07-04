@@ -32,10 +32,18 @@
     if (output) {
       const socket = io()
       socket.on('file-added', msg => {
-        const line = document.createElement('div');
-        line.innerText = msg;
+        const line = document.createElement('div')
+        line.innerText = msg
 
-        output.appendChild(line);
+        output.appendChild(line)
+      })
+
+      socket.on('fail', msg => {
+        const line = document.createElement('div')
+        line.style.color = 'red'
+        line.innerText = msg
+
+        output.appendChild(line)
       })
 
       socket.on('done', _ => {
