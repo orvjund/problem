@@ -5,7 +5,7 @@ const fs = require('fs')
 const express = require('express')
 const Mustache = require('mustache')
 const fileUpload = require('express-fileupload')
-const zipdir = require('zip-dir')
+const archiver = require('archiver')
 const socketIO = require('socket.io')
 
 const app = express()
@@ -42,21 +42,20 @@ app.use((_, __, next) => {
 
   next()
 })
-
 const uploadOpts = {
   safeFileNames: true,
   useTempFiles: true,
   preserveExtension: 4,
   tempFileDir: tmpPath,
 }
-app.use(fileUpload(uploadOpts))
 app.use('*', (req, res, next) => {
-  if (ServerStatus.isBackingUp && req.method === 'POST') {
+  if (ServerStatus.isBackingUp && req.method !== 'GET') {
     return res.redirect('/')
   }
 
   next()
 })
+app.use(fileUpload(uploadOpts))
 app.get('/view/:videoName', (req, res) => {
   const { videoName } = req.params
 
@@ -75,41 +74,43 @@ app.get('/upload', (_, res) => {
 })
 app.get('/back-up/:password?', async (req, res) => {
   const password = req.params.password || req.query.password
-
-  if ((password) !== 'Snail!') {
-    return res.send(Mustache.render(Htmls.BACKUP,  {}))
+  if (password !== 'Snail!') {
+    return res.send(Mustache.render(Htmls.BACKUP, {}))
   }
 
-  if (fs.existsSync(backupPath)) {
-    return res.sendFile(backupPath)
-  }
-
-  res.send(Mustache.render(Htmls.BACKUP, { output: 'Starting...!\n' }))
+  res.send(Mustache.render(Htmls.BACKUP, { output: 'Starting...!\n', password }))
 
   io.on('connection', (socket) => {
-    console.log('A started backing up...!')
+    console.log('An user started backing up...!')
     ServerStatus.isBackingUp = true
 
     try {
-      zipdir(badPath,
-        {
-          each: path => socket.emit('file-added', path),
-          saveTo: backupPath,
-        },
-        (err) => {
-          ServerStatus.isBackingUp = false
+      const backup = fs.createWriteStream(backupPath)
+      const archive = archiver('zip', { zlib: { level: 0 } })
 
-          if (err) {
-            if (fs.existsSync(backupPath)) {
-              fs.unlinkSync(backupPath)
-            }
+      backup.on('close', () => {
+        socket.emit('done', archive.pointer())
 
-            socket.emit('fail', err.message)
-          }
+        console.info('Done backing up')
+        console.info(`${archive.pointer()} bytes`)
+      })
 
-          socket.emit('done')
-          socket.disconnect()
-        })
+      archive.on('entry', (entry) => {
+        const sizeInMb = entry.stats.size / 1024 / 1024
+        io.emit('file-added', `${entry.name} - ${sizeInMb.toFixed(2)} MB`)
+
+        console.info(`Backed up: ${entry.name}`)
+      })
+
+      archive.on('error', (err) => {
+        socket.emit('fail', err.message)
+        console.error(err)
+        throw err;
+      })
+
+      archive.pipe(backup)
+      archive.directory(badPath, false)
+      archive.finalize()
     } catch (error) {
       console.error(error)
       ServerStatus.isBackingUp = false
@@ -118,6 +119,23 @@ app.get('/back-up/:password?', async (req, res) => {
       }
     }
   })
+})
+app.get('/back-up-download/:password?', (req, res) => {
+  const password = req.params.password || req.query.password
+  if (password !== 'Snail!') {
+    return res.send(Mustache.render(Htmls.BACKUP, {}))
+  }
+
+  if (fs.existsSync(backupPath)) {
+    return res.sendFile(backupPath, err => {
+      console.error(err)
+      if (fs.existsSync(backupPath)) {
+        fs.unlinkSync(backupPath)
+      }
+    })
+  }
+
+  return res.send(Mustache.render(Htmls.BACKUP, { password }))
 })
 app.post('/upload', (req, res) => {
   if (ServerStatus.isBackingUp) return res.redirect('/')

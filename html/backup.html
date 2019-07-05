@@ -18,7 +18,7 @@
 <body>
   <form action="/back-up" method="GET">
     <label for="password">Password</label>
-    <input type="password" id="password" name="password">
+    <input type="password" id="password" name="password" value="{{password}}">
     <button type="submit">Submit</button>
   </form>
   {{#output}}
@@ -46,8 +46,13 @@
         output.appendChild(line)
       })
 
-      socket.on('done', _ => {
-        window.location.reload(true)
+      socket.on('done',total => {
+        document.querySelector('form').action = '/back-up-download'
+        document.querySelector('form>button').innerHTML = 'Download backup'
+
+        const line = document.createElement('div')
+        line.innerText = `${total / 1024 / 1024 / 1024} GB`
+        output.appendChild(line)
       })
     }
   </script>
